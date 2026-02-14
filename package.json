@@ -1,9 +1,9 @@
 {
-  "name": "read-aloud-text",
-  "displayName": "Read Aloud text",
+  "name": "text-speaker",
+  "displayName": "Text Speaker",
   "description": "Text to speech and highlight texts",
-  "version": "1.2.3",
-  "publisher": "azu",
+  "version": "1.0.0",
+  "publisher": "mfujita47",
   "license": "MIT",
   "keywords": [
     "speech",
@@ -18,100 +18,112 @@
     "theme": "light"
   },
   "engines": {
-    "vscode": "^1.5.0"
+    "vscode": "^1.60.0"
   },
   "categories": [
     "Other"
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/azu/vscode-read-aloud-text.git"
+    "url": "https://github.com/mfujita47/VSCode-Text-Speaker.git"
   },
   "activationEvents": [
-    "onCommand:read-aloud-text.speakDocument",
-    "onCommand:read-aloud-text.speakHere",
-    "onCommand:read-aloud-text.speakSelection",
-    "onCommand:read-aloud-text.stopSpeaking"
+    "onCommand:text-speaker.speakDocument",
+    "onCommand:text-speaker.speakHere",
+    "onCommand:text-speaker.speakSelection",
+    "onCommand:text-speaker.stopSpeaking",
+    "onCommand:text-speaker.selectVoice"
   ],
-  "main": "./out/extension",
+  "main": "./dist/extension",
   "contributes": {
     "configuration": {
       "type": "object",
       "title": "Speech configuration",
       "properties": {
-        "read-aloud-text.voice": {
+        "text-speaker.voice": {
+          "type": "string",
+          "default": "",
+          "description": "Name of voice used to speak text."
+        },
+        "text-speaker.speed": {
+          "type": "number",
+          "default": 1,
+          "description": "Speech rate speed multiplier."
+        },
+        "text-speaker.highlightColor": {
           "type": [
             "string",
             "null"
           ],
           "default": null,
-          "description": "Name of voice used to speak text."
-        },
-        "read-aloud-text.speed": {
-          "type": "number",
-          "default": 1,
-          "description": "Speech rate speed multiplier."
+          "description": "Background color of the highlighted text. If null, it uses the theme's word highlight color."
         }
       }
     },
     "commands": [
       {
-        "command": "read-aloud-text.speakDocument",
-        "title": "Speak Document",
+        "command": "text-speaker.speakDocument",
+        "title": "Text Speaker: Speak Document",
         "when": "editorTextFocus"
       },
       {
-        "command": "read-aloud-text.speakHere",
-        "title": "Speak Here",
+        "command": "text-speaker.speakHere",
+        "title": "Text Speaker: Speak Here",
         "when": "editorTextFocus"
       },
       {
-        "command": "read-aloud-text.speakSelection",
-        "title": "Speak Selection",
+        "command": "text-speaker.speakSelection",
+        "title": "Text Speaker: Speak Selection",
         "when": "editorTextFocus && editorHasSelection"
       },
       {
-        "command": "read-aloud-text.stopSpeaking",
-        "title": "Stop Speaking"
+        "command": "text-speaker.stopSpeaking",
+        "title": "Text Speaker: Stop Speaking"
+      },
+      {
+        "command": "text-speaker.selectVoice",
+        "title": "Text Speaker: Select Voice"
       }
     ],
     "menus": {
       "editor/context": [
         {
-          "command": "read-aloud-text.speakDocument",
-          "when": "!editorHasSelection",
-          "group": "8_read-aloud-text"
+          "command": "text-speaker.speakDocument",
+          "group": "8_text-speaker"
         },
         {
-          "command": "read-aloud-text.speakHere",
+          "command": "text-speaker.speakHere",
           "when": "!editorHasSelection",
-          "group": "8_read-aloud-text"
+          "group": "8_text-speaker"
         },
         {
-          "command": "read-aloud-text.speakSelection",
+          "command": "text-speaker.speakSelection",
           "when": "editorHasSelection",
-          "group": "8_read-aloud-text"
+          "group": "8_text-speaker"
         },
         {
-          "command": "read-aloud-text.stopSpeaking",
-          "group": "8_read-aloud-text"
+          "command": "text-speaker.stopSpeaking",
+          "group": "8_text-speaker"
         }
       ]
     }
   },
   "scripts": {
-    "vscode:prepublish": "tsc -p ./",
-    "compile": "tsc -watch -p ./",
-    "postinstall": "node ./node_modules/vscode/bin/install",
+    "vscode:prepublish": "npm run bundle",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "bundle": "esbuild ./src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node",
+    "bundle-watch": "npm run bundle -- --watch",
     "prettier": "prettier --write \"**/*.{js,jsx,ts,tsx,css}\""
   },
   "devDependencies": {
-    "@types/node": "^10.12.2",
+    "@types/node": "^18.0.0",
+    "@types/vscode": "^1.5.0",
+    "esbuild": "^0.20.2",
     "husky": "^1.1.3",
     "lint-staged": "^8.0.4",
     "prettier": "^1.14.3",
-    "typescript": "^3.1.6",
-    "vscode": "^1.1.18"
+    "typescript": "^5.3.3"
   },
   "dependencies": {
     "@textlint/ast-node-types": "^4.0.3",
@@ -119,9 +131,7 @@
     "@textlint/kernel": "^3.0.0",
     "@textlint/textlint-plugin-markdown": "^5.0.1",
     "@textlint/textlint-plugin-text": "^4.0.1",
-    "@types/p-queue": "^3.0.0",
     "@types/structured-source": "^3.0.0",
-    "p-queue": "^3.0.0",
     "say": "^0.15.0",
     "sentence-splitter": "^3.0.11",
     "structured-source": "^3.0.2",

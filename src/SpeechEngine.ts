@@ -1,156 +1,200 @@
 import * as say from "say";
-import { TxtNode, TxtParentNode, ASTNodeTypes } from "@textlint/ast-node-types";
-import { createParser } from "./parser";
-import { traverse, VisitorOption } from "@textlint/ast-traverse";
-import { splitAST, Syntax as SentenceSyntax } from "sentence-splitter";
-const StringSource = require("textlint-util-to-string");
-import PQueue = require("p-queue");
+import * as os from "os";
+import * as cp from "child_process";
+import { TxtNode, ASTNodeTypes } from "@textlint/ast-node-types";
+import { split } from "sentence-splitter";
 import { EventEmitter } from "events";
 
-import StructuredSource = require("structured-source");
 /**
  *  Line number starts with 1.
  *  Column number starts with 0.
  */
 export type SpeechEnginePosition = { line: number; column: number };
+
+let currentWindowsProcess: cp.ChildProcess | null = null;
+let isStopping = false;
+
 export class SpeechEngine extends EventEmitter {
-    private txtAST: TxtNode;
     private txtNodes: TxtNode[];
     private speechIndex: number;
-    private promiseQueue: PQueue<PQueue.DefaultAddOptions>;
+
     public status: "pause" | "play" | "stop" = "stop";
     constructor(
-        private text: string,
+        text: string,
         filePath: string,
-        loc?: {
-            start: SpeechEnginePosition;
-            end?: SpeechEnginePosition;
+        options?: {
+            range?: [number, number];
+            loc?: {
+                start: SpeechEnginePosition;
+                end?: SpeechEnginePosition;
+            };
         }
     ) {
         super();
-        const structuredSource = new StructuredSource(text);
-        const positionToIndex = (position: { line: number; column: number }): number => {
-            return structuredSource.positionToIndex(position);
-        };
-        const startIndex = loc ? positionToIndex(loc.start) : null;
-        const endIndex = loc
-            ? loc.end
-                ? positionToIndex(loc.end)
-                : Infinity
-            : null;
-        const parser = createParser([
-            {
-                pluginId: "text",
-                plugin: require("@textlint/textlint-plugin-text")
-            },
-            {
-                pluginId: "markdown",
-                plugin: require("@textlint/textlint-plugin-markdown")
-            },
-            {
-                pluginId: "review",
-                plugin: require("textlint-plugin-review")
-            }
-        ]);
         this.speechIndex = 0;
-        this.txtAST = parser.parse(text, filePath);
-        const txtNodes: TxtNode[] = [];
-        const isIncludedNode = (node: TxtNode): boolean => {
-            if (!startIndex || !endIndex) {
-                return true;
-            }
-            // Node range
-            // |------------------|  <- A
-            //                    |----| <- B
-            //                         |------------------| <- C
-            //        |//////////////////////////|  <- Selection
-            //        ^                          ^
-            //     startIndex                 endIndex
-            // Pattern D
-            //  |-------|
-            //    |///|
-            const nodeStartIndex = node.range[0];
-            const nodeEndIndex = node.range[1];
-            // Pattern A
-            if (startIndex <= nodeEndIndex && nodeEndIndex <= endIndex) {
-                return true;
-            }
-            // Pattern B
-            if (startIndex <= nodeStartIndex && nodeEndIndex <= endIndex) {
-                return true;
-            }
-            // Pattern C
-            if (startIndex <= nodeStartIndex && nodeStartIndex <= endIndex) {
-                return true;
-            }
-            // Pattern D
-            if (nodeStartIndex <= startIndex && endIndex <= nodeEndIndex) {
-                return true;
-            }
-            return false;
-        };
-        traverse(this.txtAST as TxtParentNode, {
-            enter(node) {
-                if (!isIncludedNode(node)) {
-                    return;
+        this.txtNodes = this.parseText(text, options);
+    }
+
+    private parseText(
+        text: string,
+        options?: { range?: [number, number]; loc?: { start: SpeechEnginePosition; end?: SpeechEnginePosition } }
+    ): TxtNode[] {
+        let startCharIndex = 0;
+        let endCharIndex = text.length;
+
+        if (options?.range) {
+            startCharIndex = options.range[0];
+            endCharIndex = options.range[1];
+        } else if (options?.loc) {
+            let currentLine = 1;
+            let index = 0;
+            const lines = text.split(/\r?\n/);
+            for (const line of lines) {
+                if (currentLine === options.loc.start.line) {
+                    startCharIndex = index + options.loc.start.column;
                 }
-                if (node.type === ASTNodeTypes.Paragraph || node.type === ASTNodeTypes.Header || node.type === "TableCell") {
-                    const parentNode = splitAST(node as TxtParentNode);
-                    parentNode.children.forEach(node => {
-                        if (!isIncludedNode(node)) {
-                            return;
-                        }
-                        if (node.type === SentenceSyntax.Sentence) {
-                            txtNodes.push(node);
-                        }
-                    });
-                    return VisitorOption.Skip;
+                if (options.loc.end && currentLine === options.loc.end.line) {
+                    endCharIndex = index + options.loc.end.column;
                 }
-                if (node.type === ASTNodeTypes.Str) {
-                    txtNodes.push(node);
-                }
+                const isCRLF = text[index + line.length] === "\r";
+                index += line.length + (isCRLF ? 2 : 1);
+                currentLine++;
             }
-        });
-        this.txtNodes = txtNodes;
-        this.promiseQueue = new PQueue({ concurrency: 1 });
+        }
+
+        // Optimization and Strict Range Limiting:
+        let offset = 0;
+        let textToParse = text;
+
+        // If a specific range is requested (Speak Selection or Speak Here), 
+        // we should ideally only parse that range to be strict.
+        const isRangeStrict = !!(options?.range || (options?.loc && options?.loc.end));
+        
+        if (isRangeStrict) {
+            // Strictly parse only the selected range
+            textToParse = text.substring(startCharIndex, endCharIndex);
+            offset = startCharIndex;
+        } else {
+            // Optimization for large files (Speak Document or Speak Here without end)
+            const LARGE_FILE_THRESHOLD = 100000;
+            const PARSE_WINDOW = 50000; 
+
+            if (text.length > LARGE_FILE_THRESHOLD) {
+                const sliceStart = Math.max(0, startCharIndex - 200);
+                const targetEnd = text.length;
+                const sliceEnd = Math.min(text.length, Math.max(startCharIndex + PARSE_WINDOW, targetEnd));
+                
+                const MAX_SLICE_SIZE = 500000; 
+                const finalSliceEnd = Math.min(sliceEnd, sliceStart + MAX_SLICE_SIZE);
+                
+                textToParse = text.substring(sliceStart, finalSliceEnd);
+                offset = sliceStart;
+            }
+        }
+
+        const allNodes = split(textToParse);
+        const sentenceNodes = allNodes.filter((node) => node.type === "Sentence") as TxtNode[];
+
+        // Further split sentences by newlines to handle bullet points and lines without punctuation
+        const fineGrainedNodes: TxtNode[] = [];
+        for (const node of sentenceNodes) {
+            const lines = node.raw.split(/(\r?\n)/);
+            let currentOffset = node.range[0];
+            
+            for (const line of lines) {
+                if (line.match(/^\r?\n$/)) {
+                    currentOffset += line.length;
+                    continue;
+                }
+                if (line.trim().length > 0) {
+                    const start = currentOffset;
+                    const end = currentOffset + line.length;
+                    fineGrainedNodes.push({
+                        ...node,
+                        raw: line,
+                        range: [start, end]
+                    } as TxtNode);
+                }
+                currentOffset += line.length;
+            }
+        }
+
+        return fineGrainedNodes
+            .map((node) => {
+                return {
+                    ...node,
+                    range: [node.range[0] + offset, node.range[1] + offset] as [number, number]
+                };
+            })
+            .filter((node) => {
+                const [nodeStart, nodeEnd] = node.range;
+                // Strict overlap check with the requested range
+                const isOverlapping = Math.max(startCharIndex, nodeStart) < Math.min(endCharIndex, nodeEnd);
+                return isOverlapping && nodeEnd > startCharIndex && node.raw.trim().length > 0;
+            });
     }
 
     onChange(handler: (currentSpeechNode: TxtNode) => void) {
-        this.on("CHANGE", (index: number) => {
-            console.log("currentIndex", index);
-            handler(this.txtNodes[index]);
-        });
+        this.on("CHANGE", handler);
     }
 
     start(voice: string, speed: number) {
         this.status = "play";
-        this.txtNodes.slice(this.speechIndex).forEach((node: TxtNode | TxtParentNode, index) => {
-            // StringSource can handle ParentNode
-            const text: string = node.children ? new StringSource(node).toString() : node.raw;
-            this.promiseQueue.add(() => {
-                this.emit("CHANGE", this.speechIndex);
-                return speakText(text, voice, speed)
-                    .then(() => {
-                        // update index after finishing speech
-                        this.speechIndex++;
-                    })
-                    .catch(error => {
-                        this.speechIndex++;
-                    });
-            });
-        });
+        isStopping = false;
+        let consecutiveErrors = 0;
+        const MAX_CONSECUTIVE_ERRORS = 5;
+        const next = () => {
+            if (this.status !== "play" || isStopping) {
+                return;
+            }
+            if (this.speechIndex < 0 || this.speechIndex >= this.txtNodes.length) {
+                this.status = "stop";
+                return;
+            }
+            const node = this.txtNodes[this.speechIndex];
+            if (!node) {
+                this.status = "stop";
+                return;
+            }
+            const text = node.raw;
+            this.emit("CHANGE", node);
+
+            speakText(text, voice, speed)
+                .then(() => {
+                    if (isStopping) return;
+                    consecutiveErrors = 0;
+                    this.speechIndex++;
+                    // Add a small delay between sentences
+                    setTimeout(() => next(), 100);
+                })
+                .catch((error) => {
+                    if (isStopping) return;
+                    consecutiveErrors++;
+                    stopSpeaking();
+                    
+                    if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
+                        this.status = "stop";
+                        this.emit("error", new Error(`Stopped due to too many consecutive errors: ${error.message || error}`));
+                        return;
+                    }
+                    this.emit("error", error);
+                    this.speechIndex++;
+                    setTimeout(() => next(), 200);
+                });
+        };
+        next();
     }
 
     pause() {
         this.status = "pause";
-        this.promiseQueue.clear();
+        isStopping = true;
         this.removeAllListeners();
         stopSpeaking();
     }
 
     reset() {
         this.status = "stop";
-        this.promiseQueue.clear();
+        isStopping = true;
         this.removeAllListeners();
         stopSpeaking();
         this.speechIndex = 0;
@@ -158,21 +202,67 @@ export class SpeechEngine extends EventEmitter {
 }
 
 const stopSpeaking = () => {
-    say.stop();
+    if (os.platform() === "win32") {
+        if (currentWindowsProcess) {
+            try {
+                // Try to kill the process and its children
+                cp.execSync(`taskkill /F /T /PID ${currentWindowsProcess.pid}`, { stdio: 'ignore' });
+            } catch (e) {
+                // ignore errors if process already dead
+            }
+            currentWindowsProcess = null;
+        }
+    } else {
+        say.stop();
+    }
 };
 
 const speakText = (text: string, voice: string, speed: number): Promise<void> => {
     text = text.trim();
-    if (text.length > 0) {
+    if (text.length === 0 || isStopping) {
+        return Promise.resolve();
+    }
+
+    if (os.platform() === "win32") {
         return new Promise((resolve, reject) => {
-            say.speak(text, voice, speed, (error: any) => {
-                if (error) {
-                    reject(error);
-                } else {
-                    resolve();
+            const escapedText = text.replace(/'/g, "''").replace(/"/g, '`"');
+            const voiceScript = voice ? `$speak.SelectVoice('${voice}');` : "";
+            const rate = Math.max(-10, Math.min(10, Math.round((speed - 1) * 5)));
+
+            const command = `Add-Type -AssemblyName System.speech; $speak = New-Object System.Speech.Synthesis.SpeechSynthesizer; ${voiceScript} $speak.Rate = ${rate}; $speak.Speak("${escapedText}")`;
+
+            currentWindowsProcess = cp.spawn("powershell", ["-Command", `& {${command}}`]);
+
+            let isFinished = false;
+            
+            const cleanup = () => {
+                if (isFinished) return;
+                isFinished = true;
+                if (currentWindowsProcess) {
+                    currentWindowsProcess.removeAllListeners();
                 }
+                currentWindowsProcess = null;
+            };
+
+            currentWindowsProcess.on("exit", (code) => {
+                cleanup();
+                resolve();
+            });
+
+            currentWindowsProcess.on("error", (err) => {
+                cleanup();
+                reject(err);
             });
         });
     }
-    return Promise.resolve();
+
+    return new Promise((resolve, reject) => {
+        say.speak(text, voice, speed, (error: any) => {
+            if (error) {
+                reject(error);
+            } else {
+                resolve();
+            }
+        });
+    });
 };
