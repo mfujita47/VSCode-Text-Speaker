@@ -1,17 +1,20 @@
 {
     "compilerOptions": {
-        "module": "commonjs",
-        "target": "es6",
-        "outDir": "out",
-        "sourceMap": true,
-        "rootDir": "src",
+        /* esbuild resolves and bundles the sources, so type checking follows its rules. */
+        "module": "esnext",
+        "moduleResolution": "bundler",
+        "target": "es2020",
+        "lib": ["es2020"],
+        "types": ["node"],
         "strict": true,
-        "lib": [
-            "es2020"
-        ]
+        "noImplicitOverride": true,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "noFallthroughCasesInSwitch": true,
+        "forceConsistentCasingInFileNames": true,
+        /* esbuild produces the shipped bundle, so tsc is only ever a type checker here. */
+        "noEmit": true
     },
-    "exclude": [
-        "node_modules",
-        ".vscode-test"
-    ]
+    "include": ["src/**/*.ts"],
+    "exclude": ["node_modules", ".vscode-test"]
 }

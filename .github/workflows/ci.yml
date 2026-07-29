@@ -1,0 +1,61 @@
+name: CI
+
+on:
+    push:
+        branches: [master]
+    pull_request:
+        branches: [master]
+    workflow_dispatch:
+
+permissions:
+    contents: read
+
+concurrency:
+    group: ci-${{ github.ref }}
+    cancel-in-progress: true
+
+jobs:
+    check:
+        name: Check on ${{ matrix.os }}
+        runs-on: ${{ matrix.os }}
+        strategy:
+            fail-fast: false
+            matrix:
+                os: [ubuntu-latest, windows-latest]
+        steps:
+            - uses: actions/checkout@v7
+
+            - uses: actions/setup-node@v7
+              with:
+                  node-version: 20
+                  cache: npm
+
+            - run: npm ci
+
+            # Typecheck, lint, formatting and the unit tests. The tests that drive a
+            # real speech host stay off here; they need TEXT_SPEAKER_AUDIO_TESTS=1 and
+            # a Windows machine with installed voices.
+            - name: Typecheck, lint, format and test
+              run: npm run check
+
+    package:
+        name: Package
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v7
+
+            - uses: actions/setup-node@v7
+              with:
+                  node-version: 20
+                  cache: npm
+
+            - run: npm ci
+
+            - name: Build the .vsix
+              run: npx --no-install vsce package --out text-speaker.vsix
+
+            - uses: actions/upload-artifact@v7
+              with:
+                  name: text-speaker-vsix
+                  path: text-speaker.vsix
+                  if-no-files-found: error

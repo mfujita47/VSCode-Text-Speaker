@@ -1,7 +1,0 @@
- INFO  Detected presence of yarn.lock. Using 'yarn' instead of 'npm' (to override this pass '--no-yarn' on the command line).
-Executing prepublish script 'yarn run vscode:prepublish'...
-(node:24264) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerabilities, as the arguments are not escaped, only concatenated.
-(Use `node --trace-deprecation ...` to show where the warning was created)
-'yarn' is not recognized as an internal or external command,
-operable program or batch file.
- ERROR  yarn failed with exit code 1

@@ -1,157 +1,158 @@
 {
-  "name": "text-speaker",
-  "displayName": "Text Speaker",
-  "description": "Text to speech and highlight texts",
-  "version": "1.0.0",
-  "publisher": "mfujita47",
-  "license": "MIT",
-  "keywords": [
-    "speech",
-    "say",
-    "tts",
-    "text to speech",
-    "text-to-speech"
-  ],
-  "icon": "media/logo.png",
-  "galleryBanner": {
-    "color": "#ffff66",
-    "theme": "light"
-  },
-  "engines": {
-    "vscode": "^1.60.0"
-  },
-  "categories": [
-    "Other"
-  ],
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/mfujita47/VSCode-Text-Speaker.git"
-  },
-  "activationEvents": [
-    "onCommand:text-speaker.speakDocument",
-    "onCommand:text-speaker.speakHere",
-    "onCommand:text-speaker.speakSelection",
-    "onCommand:text-speaker.stopSpeaking",
-    "onCommand:text-speaker.selectVoice"
-  ],
-  "main": "./dist/extension",
-  "contributes": {
-    "configuration": {
-      "type": "object",
-      "title": "Speech configuration",
-      "properties": {
-        "text-speaker.voice": {
-          "type": "string",
-          "default": "",
-          "description": "Name of voice used to speak text."
-        },
-        "text-speaker.speed": {
-          "type": "number",
-          "default": 1,
-          "description": "Speech rate speed multiplier."
-        },
-        "text-speaker.highlightColor": {
-          "type": [
-            "string",
-            "null"
-          ],
-          "default": null,
-          "description": "Background color of the highlighted text. If null, it uses the theme's word highlight color."
-        }
-      }
-    },
-    "commands": [
-      {
-        "command": "text-speaker.speakDocument",
-        "title": "Text Speaker: Speak Document",
-        "when": "editorTextFocus"
-      },
-      {
-        "command": "text-speaker.speakHere",
-        "title": "Text Speaker: Speak Here",
-        "when": "editorTextFocus"
-      },
-      {
-        "command": "text-speaker.speakSelection",
-        "title": "Text Speaker: Speak Selection",
-        "when": "editorTextFocus && editorHasSelection"
-      },
-      {
-        "command": "text-speaker.stopSpeaking",
-        "title": "Text Speaker: Stop Speaking"
-      },
-      {
-        "command": "text-speaker.selectVoice",
-        "title": "Text Speaker: Select Voice"
-      }
+    "name": "text-speaker",
+    "displayName": "Text Speaker",
+    "description": "Text to speech and highlight texts",
+    "version": "1.1.0",
+    "publisher": "mfujita47",
+    "license": "MIT",
+    "keywords": [
+        "speech",
+        "say",
+        "tts",
+        "text to speech",
+        "text-to-speech"
     ],
-    "menus": {
-      "editor/context": [
-        {
-          "command": "text-speaker.speakDocument",
-          "group": "8_text-speaker"
+    "icon": "media/logo.png",
+    "galleryBanner": {
+        "color": "#ffff66",
+        "theme": "light"
+    },
+    "engines": {
+        "vscode": "^1.60.0"
+    },
+    "categories": [
+        "Other"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/mfujita47/VSCode-Text-Speaker.git"
+    },
+    "activationEvents": [
+        "onCommand:text-speaker.speakDocument",
+        "onCommand:text-speaker.speakHere",
+        "onCommand:text-speaker.speakSelection",
+        "onCommand:text-speaker.stopSpeaking",
+        "onCommand:text-speaker.selectVoice"
+    ],
+    "main": "./dist/extension",
+    "contributes": {
+        "configuration": {
+            "type": "object",
+            "title": "Speech configuration",
+            "properties": {
+                "text-speaker.voice": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Name of voice used to speak text."
+                },
+                "text-speaker.speed": {
+                    "type": "number",
+                    "default": 1,
+                    "description": "Speech rate speed multiplier."
+                },
+                "text-speaker.highlightColor": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "default": null,
+                    "description": "Background color of the highlighted text. If null, it uses the theme's word highlight color."
+                }
+            }
         },
-        {
-          "command": "text-speaker.speakHere",
-          "when": "!editorHasSelection",
-          "group": "8_text-speaker"
-        },
-        {
-          "command": "text-speaker.speakSelection",
-          "when": "editorHasSelection",
-          "group": "8_text-speaker"
-        },
-        {
-          "command": "text-speaker.stopSpeaking",
-          "group": "8_text-speaker"
+        "commands": [
+            {
+                "command": "text-speaker.speakDocument",
+                "title": "Text Speaker: Speak Document",
+                "when": "editorTextFocus"
+            },
+            {
+                "command": "text-speaker.speakHere",
+                "title": "Text Speaker: Speak Here",
+                "when": "editorTextFocus"
+            },
+            {
+                "command": "text-speaker.speakSelection",
+                "title": "Text Speaker: Speak Selection",
+                "when": "editorTextFocus && editorHasSelection"
+            },
+            {
+                "command": "text-speaker.stopSpeaking",
+                "title": "Text Speaker: Stop Speaking"
+            },
+            {
+                "command": "text-speaker.selectVoice",
+                "title": "Text Speaker: Select Voice"
+            }
+        ],
+        "menus": {
+            "editor/context": [
+                {
+                    "command": "text-speaker.speakDocument",
+                    "group": "8_text-speaker"
+                },
+                {
+                    "command": "text-speaker.speakHere",
+                    "when": "!editorHasSelection",
+                    "group": "8_text-speaker"
+                },
+                {
+                    "command": "text-speaker.speakSelection",
+                    "when": "editorHasSelection",
+                    "group": "8_text-speaker"
+                },
+                {
+                    "command": "text-speaker.stopSpeaking",
+                    "group": "8_text-speaker"
+                }
+            ]
         }
-      ]
+    },
+    "scripts": {
+        "vscode:prepublish": "npm run check && npm run bundle",
+        "bundle": "esbuild ./src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node",
+        "watch": "npm run bundle -- --watch",
+        "typecheck": "tsc -p ./",
+        "typecheck:watch": "tsc -p ./ --watch",
+        "lint": "eslint .",
+        "format": "prettier --write .",
+        "format:check": "prettier --check .",
+        "test": "vitest run",
+        "test:watch": "vitest",
+        "check": "npm run typecheck && npm run lint && npm run format:check && npm run test",
+        "package": "vsce package",
+        "prepare": "husky"
+    },
+    "devDependencies": {
+        "@types/node": "^20.19.43",
+        "@types/vscode": "1.60.0",
+        "@vscode/vsce": "^3.9.2",
+        "esbuild": "^0.20.2",
+        "eslint": "^9.39.5",
+        "husky": "^9.1.7",
+        "lint-staged": "^15.5.2",
+        "ovsx": "^1.0.2",
+        "prettier": "^3.9.6",
+        "typescript": "^5.3.3",
+        "typescript-eslint": "^8.65.0",
+        "vitest": "^4.1.10"
+    },
+    "dependencies": {
+        "say": "^0.15.0",
+        "sentence-splitter": "^3.0.11"
+    },
+    "prettier": {
+        "singleQuote": false,
+        "printWidth": 120,
+        "tabWidth": 4
+    },
+    "lint-staged": {
+        "*.{js,mjs,ts}": [
+            "prettier --write",
+            "eslint --fix"
+        ],
+        "*.{json,md}": [
+            "prettier --write"
+        ]
     }
-  },
-  "scripts": {
-    "vscode:prepublish": "npm run bundle",
-    "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./",
-    "bundle": "esbuild ./src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node",
-    "bundle-watch": "npm run bundle -- --watch",
-    "prettier": "prettier --write \"**/*.{js,jsx,ts,tsx,css}\""
-  },
-  "devDependencies": {
-    "@types/node": "^18.0.0",
-    "@types/vscode": "^1.5.0",
-    "esbuild": "^0.20.2",
-    "husky": "^1.1.3",
-    "lint-staged": "^8.0.4",
-    "prettier": "^1.14.3",
-    "typescript": "^5.3.3"
-  },
-  "dependencies": {
-    "@textlint/ast-node-types": "^4.0.3",
-    "@textlint/ast-traverse": "^2.0.9",
-    "@textlint/kernel": "^3.0.0",
-    "@textlint/textlint-plugin-markdown": "^5.0.1",
-    "@textlint/textlint-plugin-text": "^4.0.1",
-    "@types/structured-source": "^3.0.0",
-    "say": "^0.15.0",
-    "sentence-splitter": "^3.0.11",
-    "structured-source": "^3.0.2",
-    "textlint-plugin-review": "^0.3.3",
-    "textlint-util-to-string": "^2.1.1"
-  },
-  "prettier": {
-    "singleQuote": false,
-    "printWidth": 120,
-    "tabWidth": 4
-  },
-  "husky": {
-    "hooks": {
-      "precommit": "lint-staged"
-    }
-  },
-  "lint-staged": {
-    "*.{js,jsx,ts,tsx,css}": [
-      "prettier --write",
-      "git add"
-    ]
-  }
 }
