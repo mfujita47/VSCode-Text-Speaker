@@ -5,7 +5,10 @@
 src/**
 node_modules/**
 .gitignore
+.gitattributes
 .prettierignore
+AGENT.md
+vitest.config.*
 .vscodeignore
 eslint.config.mjs
 tsconfig.json
