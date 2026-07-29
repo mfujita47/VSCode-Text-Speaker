@@ -1,0 +1,7 @@
+# Check out LF on every platform. Prettier runs with its default endOfLine of
+# "lf", so a CRLF working tree — which is what git produces on Windows unless it
+# is told otherwise — makes `npm run check` fail on every text file.
+* text=auto eol=lf
+
+*.png binary
+*.vsix binary
