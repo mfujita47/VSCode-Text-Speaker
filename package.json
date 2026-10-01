@@ -124,22 +124,22 @@
         "prepare": "husky"
     },
     "devDependencies": {
-        "@types/node": "^20.19.43",
+        "@types/node": "^26.6.3",
         "@types/vscode": "1.60.0",
-        "@vscode/vsce": "^3.9.2",
-        "esbuild": "^0.28.1",
-        "eslint": "^9.39.5",
+        "@vscode/vsce": "^4.0.0",
+        "esbuild": "^0.28.2",
+        "eslint": "^10.11.0",
         "husky": "^9.1.7",
-        "lint-staged": "^15.5.2",
-        "ovsx": "^1.0.2",
-        "prettier": "^3.9.6",
+        "lint-staged": "^17.6.0",
+        "ovsx": "^1.2.0",
+        "prettier": "^3.9.9",
         "typescript": "^5.3.3",
-        "typescript-eslint": "^8.65.0",
-        "vitest": "^4.1.10"
+        "typescript-eslint": "^8.71.0",
+        "vitest": "^5.0.2"
     },
     "dependencies": {
-        "say": "^0.15.0",
-        "sentence-splitter": "^3.0.11"
+        "say": "^0.16.0",
+        "sentence-splitter": "^5.0.1"
     },
     "prettier": {
         "singleQuote": false,
